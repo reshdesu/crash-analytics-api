@@ -1,0 +1,19 @@
+name = "crash-analytics-api"
+main = "worker/index.js"
+compatibility_date = "2023-12-01"
+
+# Copy this to wrangler.toml and customize for your deployment
+# Set environment variables in Cloudflare dashboard, not here!
+
+[env.production.vars]
+# DO NOT PUT ACTUAL VALUES HERE - USE CLOUDFLARE DASHBOARD
+# Set these in: Cloudflare Dashboard → Workers → Your Worker → Settings → Environment Variables
+
+# SUPABASE_URL = "https://your-project-id.supabase.co"
+# SUPABASE_SERVICE_KEY = "your-service-key-here"
+# HMAC_SECRET = "your-256-bit-random-secret"
+# RATE_LIMIT_PER_MINUTE = "60"
+# MAX_PAYLOAD_SIZE = "50000"
+
+# Generate HMAC secret with:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"

@@ -1,0 +1,37 @@
+node_modules/
+.env
+.env.local
+*.log
+dist/
+build/
+
+# Wrangler
+.wrangler/
+wrangler.toml
+!wrangler.example.toml
+
+# Local crash data (for testing)
+*_crashes/
+*.crash
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt

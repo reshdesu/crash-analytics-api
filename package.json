@@ -1,0 +1,20 @@
+{
+  "name": "crash-analytics-api",
+  "version": "1.0.0",
+  "description": "Universal crash reporting API for all applications with maximum security",
+  "main": "worker/index.js",
+  "packageManager": "pnpm@8.0.0",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "test": "jest",
+    "install:python-deps": "pip install -r clients/python/requirements.txt"
+  },
+  "keywords": ["crash-reporting", "analytics", "cloudflare-worker", "supabase"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0",
+    "jest": "^29.0.0"
+  }
+}
