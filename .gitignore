@@ -21,6 +21,9 @@ wrangler.toml
 *.swp
 *.swo
 
+# Claude Code settings (may contain secrets)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
