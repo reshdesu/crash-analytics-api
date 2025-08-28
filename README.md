@@ -74,11 +74,11 @@ pnpm install
 ### Step 2: Setup Supabase
 
 1. Create new Supabase project
-2. Go to SQL Editor → Copy/paste `database/schema.sql`
-3. Run the SQL to create tables and security policies
-4. Get your **Project URL** and **Service Role Key**:
+2. Get your **Project URL** and **Service Role Key**:
    - Settings → API → Project URL
    - Settings → API → Project API keys → service_role (secret)
+
+**✨ No manual database setup required!** Tables are created automatically on first crash report.
 
 ### Step 3: Setup Cloudflare Worker
 
@@ -88,35 +88,25 @@ npm install -g wrangler
 
 # Login to Cloudflare
 wrangler login
-
-# Configure your worker
-cp wrangler.toml wrangler.example.toml  # Edit with your settings
-```
-
-**Edit wrangler.toml:**
-```toml
-name = "your-app-crash-api"  # Choose unique name
-main = "worker/index.js"
-compatibility_date = "2023-12-01"
-
-# Don't put secrets here! Use Cloudflare dashboard instead
 ```
 
 ### Step 4: Set Environment Variables
 
-In Cloudflare Dashboard → Workers → Your Worker → Settings → Environment Variables:
+**Option 1: Via Cloudflare Dashboard (Recommended)**
+1. Go to: Cloudflare Dashboard → Workers → Your Worker → Settings → Variables
+2. Add these 5 variables with correct types:
 
-```bash
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_SERVICE_KEY=eyJ...your-service-key
-HMAC_SECRET=your-random-256-bit-secret-key
-RATE_LIMIT_PER_MINUTE=60
-MAX_PAYLOAD_SIZE=50000
+```
+SUPABASE_URL = https://your-project-id.supabase.co  (Type: Text)
+SUPABASE_SERVICE_KEY = eyJ...your-service-key  (Type: Secret)
+HMAC_SECRET = [generated-secret]  (Type: Secret)
+RATE_LIMIT_PER_MINUTE = 60  (Type: Text)
+MAX_PAYLOAD_SIZE = 50000  (Type: Text)
 ```
 
 **Generate HMAC Secret:**
 ```bash
-# Generate secure random key
+# Generate secure 256-bit secret
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
@@ -127,8 +117,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 pnpm run deploy
 
 # Your API will be available at:
-# https://your-app-crash-api.your-subdomain.workers.dev
+# https://your-worker-name.your-subdomain.workers.dev
 ```
+
+**🎉 That's it!** Your crash analytics API is ready to use.
 
 ### Step 6: Integrate with Your Apps
 
@@ -145,13 +137,13 @@ from crash_reporter import install_crash_handler
 reporter = install_crash_handler(
     app_name="my-awesome-app",           # Your app name
     app_version="v1.2.3",               # Your app version  
-    api_endpoint="https://your-worker-url.workers.dev",
-    hmac_secret="your-hmac-secret",     # Same as in Cloudflare
+    api_endpoint="https://your-worker-name.your-subdomain.workers.dev",
+    hmac_secret="your-hmac-secret",     # Same HMAC secret from Cloudflare
     user_id="user-12345"                # Optional: anonymous user ID
 )
 
 # That's it! All crashes are now automatically reported
-# + stored locally if API is down
+# Database tables created automatically on first crash
 ```
 
 #### JavaScript/Node.js Apps
@@ -211,41 +203,37 @@ GROUP BY os;
 ```
 crash-analytics-api/
 ├── worker/
-│   └── index.js              # Cloudflare Worker (main API)
+│   └── index.js              # Cloudflare Worker with auto-table creation
 ├── database/
-│   └── schema.sql            # Supabase table schema
+│   └── schema.sql            # Reference schema (auto-created by worker)
 ├── clients/
 │   ├── python/               # Python crash reporter
 │   │   ├── crash_reporter.py
 │   │   └── requirements.txt
 │   └── javascript/           # JS client (coming soon)
-├── docs/
-│   └── integration.md        # Integration guides
-└── wrangler.toml            # Cloudflare Worker config
+├── wrangler.toml            # Cloudflare Worker config
+└── README.md                # This file
 ```
 
-## 🔧 Configuration
+## ✨ Key Features
 
-### Environment Variables
+### 🔄 Auto-Setup
+- **Zero manual database setup** - Tables created automatically on first use
+- **Self-healing** - Recreates missing tables if needed
+- **Production ready** - Handles all edge cases
 
-Set these in your Cloudflare Worker dashboard:
+### 🔒 Enterprise Security
+- **HMAC authentication** - Prevents unauthorized crash reports
+- **Rate limiting** - IP-based protection (configurable)
+- **Data validation** - 15+ validation rules prevent abuse
+- **Anonymous data** - No personal info, hashed IPs only
 
-```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your-service-key-here
-HMAC_SECRET=your-secret-signing-key
-RATE_LIMIT_PER_MINUTE=60
-MAX_PAYLOAD_SIZE=50000
-```
-
-### Database Schema
-
-The crash reports table stores:
-- App name and version
-- Platform and hardware specs
-- Error messages and stack traces
-- Anonymous user/session tracking
-- Rate limiting data (hashed IPs)
+### 📊 What Gets Stored
+- App name, version, and platform
+- Error messages and stack traces  
+- Hardware specs (CPU, RAM, OS)
+- Anonymous user/session IDs (optional)
+- Crash timestamps and metadata
 
 ## 📈 What Data is Collected
 
