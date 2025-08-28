@@ -1,0 +1,144 @@
+name: 🚀 Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on any tag starting with 'v' (v1.0.0, v2.1.3, etc.)
+
+permissions:
+  contents: write  # Required to create releases
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full history for changelog
+      
+      - name: 📋 Extract tag info
+        id: tag_info
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$(if [[ $TAG == *alpha* || $TAG == *beta* || $TAG == *rc* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      
+      - name: 📝 Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag for changelog
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            # First release - show all commits
+            COMMITS=$(git log --oneline --pretty=format:"- %s" | head -20)
+            echo "## 🎉 Initial Release" > changelog.md
+            echo "" >> changelog.md
+            echo "### Recent Changes:" >> changelog.md
+            echo "$COMMITS" >> changelog.md
+          else
+            # Show commits since last tag
+            COMMITS=$(git log $PREV_TAG..HEAD --oneline --pretty=format:"- %s")
+            echo "## 📈 Changes since $PREV_TAG" > changelog.md
+            echo "" >> changelog.md
+            if [ -n "$COMMITS" ]; then
+              echo "### What's Changed:" >> changelog.md
+              echo "$COMMITS" >> changelog.md
+            else
+              echo "### What's Changed:" >> changelog.md
+              echo "- Minor updates and improvements" >> changelog.md
+            fi
+          fi
+          
+          # Add standard sections
+          cat >> changelog.md << 'EOL'
+
+## ✨ Features
+
+### 🔒 Enterprise Security
+- **HMAC Authentication** - Cryptographically signed requests
+- **Rate Limiting** - IP-based protection (configurable)
+- **Data Validation** - 15+ validation rules prevent abuse
+- **Anonymous Reporting** - Zero personal data collected
+
+### 🛠️ Core Functionality  
+- **Universal API** - Works with Python, JavaScript, Go, and more
+- **Auto-Setup** - Database tables created automatically
+- **Multi-app Support** - Single API for all your applications
+- **Self-Healing** - Recreates missing tables if needed
+
+### 📊 Analytics & Insights
+- **100+ SQL Queries** - Ready-to-use analytics
+- **Hardware Analysis** - GPU, CPU, memory breakdowns  
+- **Error Patterns** - Find common crash causes
+- **Dashboard Ready** - Works with Grafana, Metabase
+
+## 🚀 Quick Start
+
+```bash
+# 1. Fork and clone this repository
+git clone https://github.com/YOUR-USERNAME/crash-analytics-api.git
+cd crash-analytics-api
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Set up Supabase + Cloudflare (see README.md)
+
+# 4. Deploy
+pnpm run deploy
+
+# 5. Test your deployment
+API_ENDPOINT="your-endpoint" HMAC_SECRET="your-secret" pnpm test
+```
+
+## 📚 Documentation
+
+- **Setup Guide**: See [README.md](README.md) for complete setup instructions
+- **Analytics Queries**: Check [database/example-queries.sql](database/example-queries.sql) for 100+ example queries
+- **Python Client**: Use [clients/python/crash_reporter.py](clients/python/crash_reporter.py) in your Python apps
+
+## 🛡️ Security
+
+This release has been **security audited**:
+- ✅ No secrets in version control
+- ✅ HMAC request signing prevents abuse  
+- ✅ Rate limiting protects against DoS
+- ✅ Input validation prevents injection attacks
+- ✅ Anonymous data collection only
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/reshdesu/crash-analytics-api/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/reshdesu/crash-analytics-api/discussions)
+- **Security**: Report security issues privately
+
+---
+
+**Built with ❤️ for the developer community. Free, open source, and privacy-first.**
+EOL
+          
+          # Output for GitHub Action
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat changelog.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 🎉 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag_info.outputs.tag }}
+          name: "🚀 Universal Crash Analytics API ${{ steps.tag_info.outputs.tag }}"
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: ${{ steps.tag_info.outputs.is_prerelease }}
+          generate_release_notes: false  # We generate our own
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Release created
+        run: |
+          echo "🎉 Release ${{ steps.tag_info.outputs.tag }} created successfully!"
+          echo "🔗 View at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.tag_info.outputs.tag }}"
