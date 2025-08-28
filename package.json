@@ -7,7 +7,8 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "test": "jest",
+    "test": "node test-api.js",
+    "test:security": "node test-api.js",
     "install:python-deps": "pip install -r clients/python/requirements.txt"
   },
   "keywords": ["crash-reporting", "analytics", "cloudflare-worker", "supabase"],
