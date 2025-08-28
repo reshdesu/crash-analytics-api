@@ -171,32 +171,172 @@ reporter = install_crash_handler(
 
 ## 📈 Accessing Your Data
 
-**Supabase Dashboard:**
+### Quick Queries
+
+**Recent crashes by app:**
 ```sql
--- Recent crashes by app
 SELECT app_name, COUNT(*) as crashes 
 FROM crash_reports 
 WHERE created_at > NOW() - INTERVAL '7 days'
 GROUP BY app_name;
-
--- Most common errors
-SELECT error_message, COUNT(*) as frequency
-FROM crash_reports 
-WHERE app_name = 'my-app'
-GROUP BY error_message 
-ORDER BY frequency DESC;
-
--- Hardware stats
-SELECT hardware_specs->'platform'->>'system' as os,
-       COUNT(*) as crashes
-FROM crash_reports 
-GROUP BY os;
 ```
 
-**Build Your Dashboard:**
-- Connect to Supabase with any tool (Grafana, Metabase, custom React app)
-- Use the pre-built `crash_analytics` view for aggregated data
-- Export data as CSV/JSON for external analysis
+**Using the Analytics View:**
+```sql
+-- Dashboard data (pre-aggregated)
+SELECT * FROM crash_analytics 
+WHERE hour > NOW() - INTERVAL '24 hours'
+ORDER BY hour DESC;
+
+-- Top crashing apps this week
+SELECT app_name, SUM(crash_count) as total_crashes
+FROM crash_analytics 
+WHERE hour > NOW() - INTERVAL '7 days'
+GROUP BY app_name
+ORDER BY total_crashes DESC;
+```
+
+### Hardware Analysis (Last 7 Days)
+
+**GPU-based crashes:**
+```sql
+SELECT 
+    hardware_specs->'gpu'->>'name' as gpu_name,
+    COUNT(*) as crashes_7d,
+    COUNT(DISTINCT ip_hash) as unique_users_7d,
+    COUNT(DISTINCT app_name) as affected_apps
+FROM crash_reports 
+WHERE created_at > NOW() - INTERVAL '7 days'
+AND hardware_specs->'gpu'->>'name' IS NOT NULL
+GROUP BY hardware_specs->'gpu'->>'name'
+ORDER BY crashes_7d DESC;
+```
+
+**Memory configuration crashes:**
+```sql
+SELECT 
+    CASE 
+        WHEN (hardware_specs->'memory'->>'total')::bigint < 4000000000 THEN '< 4GB'
+        WHEN (hardware_specs->'memory'->>'total')::bigint < 8000000000 THEN '4-8GB'
+        WHEN (hardware_specs->'memory'->>'total')::bigint < 16000000000 THEN '8-16GB'
+        WHEN (hardware_specs->'memory'->>'total')::bigint < 32000000000 THEN '16-32GB'
+        ELSE '32GB+'
+    END as memory_range,
+    COUNT(*) as crashes_7d,
+    COUNT(DISTINCT ip_hash) as unique_users_7d
+FROM crash_reports 
+WHERE created_at > NOW() - INTERVAL '7 days'
+AND hardware_specs->'memory'->>'total' IS NOT NULL
+GROUP BY memory_range
+ORDER BY crashes_7d DESC;
+```
+
+**CPU model analysis:**
+```sql
+SELECT 
+    hardware_specs->'cpu'->>'name' as cpu_model,
+    (hardware_specs->'cpu'->>'cores')::int as cores,
+    COUNT(*) as crashes_7d,
+    COUNT(DISTINCT ip_hash) as unique_users_7d
+FROM crash_reports 
+WHERE created_at > NOW() - INTERVAL '7 days'
+AND hardware_specs->'cpu'->>'name' IS NOT NULL
+GROUP BY cpu_model, cores
+ORDER BY crashes_7d DESC;
+```
+
+**Low-resource device crashes:**
+```sql
+SELECT 
+    app_name,
+    COUNT(*) as crashes_7d,
+    COUNT(DISTINCT ip_hash) as affected_users,
+    AVG((hardware_specs->'cpu'->>'cores')::int) as avg_cpu_cores,
+    ROUND(AVG((hardware_specs->'memory'->>'total')::bigint) / 1000000000.0, 1) as avg_memory_gb
+FROM crash_reports 
+WHERE created_at > NOW() - INTERVAL '7 days'
+AND (
+    (hardware_specs->'cpu'->>'cores')::int <= 4 
+    OR (hardware_specs->'memory'->>'total')::bigint < 8000000000
+)
+GROUP BY app_name
+ORDER BY crashes_7d DESC;
+```
+
+**Hardware combination analysis:**
+```sql
+SELECT 
+    hardware_specs->'platform'->>'system' as os,
+    (hardware_specs->'cpu'->>'cores')::int as cpu_cores,
+    CASE 
+        WHEN (hardware_specs->'memory'->>'total')::bigint < 8000000000 THEN '< 8GB'
+        WHEN (hardware_specs->'memory'->>'total')::bigint < 16000000000 THEN '8-16GB'
+        ELSE '16GB+'
+    END as memory_tier,
+    COALESCE(hardware_specs->'gpu'->>'name', 'Integrated') as gpu_type,
+    COUNT(*) as crashes_7d,
+    COUNT(DISTINCT ip_hash) as unique_users_7d
+FROM crash_reports 
+WHERE created_at > NOW() - INTERVAL '7 days'
+AND hardware_specs->'platform'->>'system' IS NOT NULL
+GROUP BY os, cpu_cores, memory_tier, gpu_type
+HAVING COUNT(*) > 1
+ORDER BY crashes_7d DESC;
+```
+
+### Error Analysis
+
+**Most common errors:**
+```sql
+SELECT 
+    LEFT(error_message, 100) as error_preview,
+    COUNT(*) as frequency,
+    COUNT(DISTINCT ip_hash) as affected_users,
+    array_agg(DISTINCT app_name) as affected_apps
+FROM crash_reports 
+WHERE error_message IS NOT NULL
+GROUP BY LEFT(error_message, 100)
+ORDER BY frequency DESC
+LIMIT 20;
+```
+
+**Version comparison:**
+```sql
+SELECT 
+    app_version,
+    COUNT(*) as total_crashes,
+    COUNT(DISTINCT ip_hash) as unique_users,
+    ROUND(COUNT(*)::numeric / COUNT(DISTINCT ip_hash), 2) as crashes_per_user
+FROM crash_reports 
+WHERE app_name = 'your-app-name'  -- Replace with your app
+GROUP BY app_version
+ORDER BY total_crashes DESC;
+```
+
+### 📊 Complete Query Collection
+
+**For 100+ more analytics queries, see:**
+- `database/example-queries.sql` - Comprehensive query collection
+- **Basic Statistics** - App crashes, user counts, trends
+- **Hardware Analysis** - GPU, CPU, memory breakdowns
+- **Error Patterns** - Common crashes and stack traces
+- **Time Analysis** - Daily/hourly patterns, spike detection  
+- **User Behavior** - Session analysis, repeat crashers
+- **Monitoring** - Automated alerts and anomaly detection
+
+### Build Your Dashboard
+
+**Connect with any tool:**
+- **Grafana** - Real-time dashboards and alerts
+- **Metabase** - Business intelligence and charts  
+- **Custom React/Vue app** - Direct Supabase connection
+- **Jupyter Notebooks** - Data science analysis
+- **Excel/Google Sheets** - Export CSV data
+
+**Pre-built views:**
+- `crash_reports` - Raw crash data with full details
+- `crash_analytics` - Aggregated hourly statistics
+- Export as CSV/JSON for external analysis
 
 ## 📦 Project Structure
 

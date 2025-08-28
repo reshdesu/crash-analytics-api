@@ -9,7 +9,7 @@ const https = require('https');
 const http = require('http');
 
 // Configuration - UPDATE THESE VALUES FOR YOUR DEPLOYMENT
-const API_ENDPOINT = 'https://your-worker-name.your-subdomain.workers.dev';
+const API_ENDPOINT = process.env.API_ENDPOINT || 'https://your-worker-name.your-subdomain.workers.dev';
 const HMAC_SECRET = process.env.HMAC_SECRET || 'your-hmac-secret-here';
 
 function generateHmacSignature(payload, secret) {
