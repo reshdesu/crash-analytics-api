@@ -122,7 +122,17 @@ pnpm run deploy
 
 **🎉 That's it!** Your crash analytics API is ready to use.
 
-### Step 6: Integrate with Your Apps
+### Step 6: Test Your Deployment
+
+```bash
+# Test your live API
+API_ENDPOINT="https://your-worker-url.workers.dev" HMAC_SECRET="your-secret" pnpm test
+
+# Or start local development
+pnpm run dev  # Available at http://localhost:8787
+```
+
+### Step 7: Integrate with Your Apps
 
 #### Python Apps
 
@@ -345,15 +355,44 @@ crash-analytics-api/
 ├── worker/
 │   └── index.js              # Cloudflare Worker with auto-table creation
 ├── database/
-│   └── schema.sql            # Reference schema (auto-created by worker)
+│   ├── schema.sql            # Reference schema (auto-created by worker)
+│   └── example-queries.sql   # 100+ analytics queries
 ├── clients/
 │   ├── python/               # Python crash reporter
 │   │   ├── crash_reporter.py
 │   │   └── requirements.txt
 │   └── javascript/           # JS client (coming soon)
+├── docs/
+│   └── wrangler-guide.md     # Complete Wrangler CLI guide
+├── .github/workflows/        # Automated testing and releases
 ├── wrangler.toml            # Cloudflare Worker config
+├── test-api.js              # End-to-end API testing
 └── README.md                # This file
 ```
+
+## 🛠️ What is Wrangler?
+
+**Wrangler** is Cloudflare's CLI tool that powers this project's deployment:
+
+- **🚀 Deploys** your worker to Cloudflare's global edge network (280+ cities)
+- **⚡ Local development** server at `http://localhost:8787`
+- **🔒 Manages secrets** securely through Cloudflare dashboard
+- **📊 Monitors** your API with real-time logs and analytics
+
+**Think of it as `git push` for serverless functions!**
+
+```bash
+# Deploy your API to the world
+pnpm run deploy
+
+# Start local development  
+pnpm run dev
+
+# Test your live API
+pnpm test
+```
+
+**📚 Complete guide:** See [docs/wrangler-guide.md](docs/wrangler-guide.md) for detailed Wrangler documentation.
 
 ## ✨ Key Features
 
