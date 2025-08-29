@@ -3,9 +3,12 @@
 // Load environment variables from .env file
 require('dotenv').config();
 
-// Configuration - use environment variables for secrets
-const API_ENDPOINT = process.env.API_ENDPOINT || 'http://localhost:8787';
-const HMAC_SECRET = process.env.HMAC_SECRET || 'test-hmac-secret-for-local-development-only';
+// Configuration - Environment variables are REQUIRED
+// Make sure you have a .env file or set these environment variables:
+// - API_ENDPOINT: Your Cloudflare Workers API URL
+// - HMAC_SECRET: Your HMAC secret for request signing
+const API_ENDPOINT = process.env.API_ENDPOINT;
+const HMAC_SECRET = process.env.HMAC_SECRET;
 
 const crypto = require('crypto');
 const https = require('https');
@@ -99,6 +102,14 @@ async function sendCrashReport(error, context = {}) {
 
 // Main test function
 async function main() {
+    // Validate required environment variables
+    if (!API_ENDPOINT || !HMAC_SECRET) {
+        console.error('❌ Missing required environment variables:');
+        console.error('   API_ENDPOINT and HMAC_SECRET must be set');
+        console.error('   Make sure you have a .env file or set these variables');
+        process.exit(1);
+    }
+    
     console.log('🚀 Testing JavaScript Client against Live Cloudflare API...');
     console.log(`📡 API Endpoint: ${API_ENDPOINT}`);
     

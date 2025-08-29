@@ -8,9 +8,12 @@ require('dotenv').config();
 
 const https = require('https');
 
-// Configuration - Use environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://your-project-id.supabase.co";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "your-service-key-here";
+// Configuration - Environment variables are REQUIRED
+// Make sure you have a .env file or set these environment variables:
+// - SUPABASE_URL: Your Supabase project URL
+// - SUPABASE_SERVICE_KEY: Your Supabase service role key
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 function makeRequest(url, options) {
     return new Promise((resolve, reject) => {
@@ -32,7 +35,16 @@ function makeRequest(url, options) {
 }
 
 async function clearDatabase() {
+    // Validate required environment variables
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+        console.error('❌ Missing required environment variables:');
+        console.error('   SUPABASE_URL and SUPABASE_SERVICE_KEY must be set');
+        console.error('   Make sure you have a .env file or set these variables');
+        process.exit(1);
+    }
+    
     console.log('🗑️  Clearing crash_reports table...');
+    console.log(`📡 Using Supabase: ${SUPABASE_URL}`);
     
     try {
         // First, let's see how many rows we have

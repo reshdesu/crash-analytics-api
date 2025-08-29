@@ -11,9 +11,12 @@ const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 
-// Configuration - Use environment variables for secrets
-const API_ENDPOINT = process.env.API_ENDPOINT || 'http://localhost:8787';
-const HMAC_SECRET = process.env.HMAC_SECRET || 'test-hmac-secret-for-local-development-only';
+// Configuration - Environment variables are REQUIRED
+// Make sure you have a .env file or set these environment variables:
+// - API_ENDPOINT: Your Cloudflare Workers API URL
+// - HMAC_SECRET: Your HMAC secret for request signing
+const API_ENDPOINT = process.env.API_ENDPOINT;
+const HMAC_SECRET = process.env.HMAC_SECRET;
 
 function generateHmacSignature(payload, secret) {
     return crypto
@@ -186,6 +189,14 @@ async function testInvalidRequests() {
 }
 
 async function main() {
+    // Validate required environment variables first
+    if (!API_ENDPOINT || !HMAC_SECRET) {
+        console.error('❌ Missing required environment variables:');
+        console.error('   API_ENDPOINT and HMAC_SECRET must be set');
+        console.error('   Make sure you have a .env file or set these variables');
+        process.exit(1);
+    }
+    
     console.log('🚀 Universal Crash Analytics API - Test Suite');
     console.log('='.repeat(60));
     

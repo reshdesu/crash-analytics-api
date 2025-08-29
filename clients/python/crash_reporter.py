@@ -209,12 +209,15 @@ def install_crash_handler(config: Dict[str, Any]) -> CrashReporter:
 if __name__ == "__main__":
     import os
     
-    # Example configuration - use environment variables for secrets
+    # Example configuration - Environment variables are REQUIRED
+    # Make sure you have a .env file or set these environment variables:
+    # - API_ENDPOINT: Your Cloudflare Workers API URL
+    # - HMAC_SECRET: Your HMAC secret for request signing
     config = {
         'app_name': 'test-python-app',
         'app_version': 'v1.0.0',
-        'api_endpoint': os.getenv('API_ENDPOINT', 'http://localhost:8787'),
-        'hmac_secret': os.getenv('HMAC_SECRET', 'test-hmac-secret-for-local-development-only'),
+        'api_endpoint': os.getenv('API_ENDPOINT'),
+        'hmac_secret': os.getenv('HMAC_SECRET'),
         'user_id': 'example-user-123'
     }
     
