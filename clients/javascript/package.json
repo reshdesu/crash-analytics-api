@@ -1,0 +1,16 @@
+{
+  "name": "crash-reporter-client",
+  "version": "1.0.0",
+  "description": "JavaScript client for the Universal Crash Analytics API",
+  "main": "crash_reporter.js",
+  "scripts": {
+    "test": "node test-client.js"
+  },
+  "keywords": ["crash-reporting", "error-tracking", "analytics"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+

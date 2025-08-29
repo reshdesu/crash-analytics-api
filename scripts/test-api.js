@@ -4,13 +4,16 @@
  * Verifies the complete end-to-end crash reporting system
  */
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 
-// Configuration - UPDATE THESE VALUES FOR YOUR DEPLOYMENT
-const API_ENDPOINT = process.env.API_ENDPOINT || 'https://your-worker-name.your-subdomain.workers.dev';
-const HMAC_SECRET = process.env.HMAC_SECRET || 'your-hmac-secret-here';
+// Configuration - Use environment variables for secrets
+const API_ENDPOINT = process.env.API_ENDPOINT || 'http://localhost:8787';
+const HMAC_SECRET = process.env.HMAC_SECRET || 'test-hmac-secret-for-local-development-only';
 
 function generateHmacSignature(payload, secret) {
     return crypto

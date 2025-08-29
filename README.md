@@ -45,6 +45,32 @@ Local Fallback   HMAC Security   Your Data
 - **Geographic Filtering** - Optional region blocking
 - **Audit Logging** - Full request logging for compliance
 
+### 🔐 Secrets Management
+
+**Never commit secrets to git!** This project is configured to keep your secrets secure:
+
+- **`.env`** - Your actual secrets (ignored by git)
+- **`.env.example`** - Template showing required variables (safe to commit)
+- **`wrangler.toml`** - Cloudflare configuration (ignored by git)
+- **`wrangler.example.toml`** - Template for Cloudflare config (safe to commit)
+
+**Required Environment Variables:**
+```bash
+# API Configuration
+API_ENDPOINT=https://your-worker-name.your-subdomain.workers.dev
+
+# Security
+HMAC_SECRET=your-256-bit-random-secret
+
+# Supabase Configuration
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key
+
+# Optional: Rate limiting and payload size
+RATE_LIMIT_PER_MINUTE=60
+MAX_PAYLOAD_SIZE=50000
+```
+
 ## 🎯 Use Cases
 
 - **Multi-app Developers** - One crash API for all your projects
@@ -134,33 +160,55 @@ pnpm run dev  # Available at http://localhost:8787
 
 ### Step 7: Integrate with Your Apps
 
+#### JavaScript/Node.js Apps
+
+```javascript
+// Install the crash reporter
+const { installCrashHandler } = require('./clients/javascript/crash_reporter');
+
+// One-time setup in your main.js
+const reporter = installCrashHandler({
+    app_name: "my-awesome-app",           // Your app name
+    app_version: "v1.2.3",               // Your app version  
+    api_endpoint: "https://your-worker-name.your-subdomain.workers.dev",
+    hmac_secret: "your-hmac-secret",     // Same HMAC secret from Cloudflare
+    user_id: "user-12345"                // Optional: anonymous user ID
+});
+
+// That's it! All crashes are now automatically reported
+// Database tables created automatically on first crash
+```
+
 #### Python Apps
 
 ```python
-# Install dependencies
-pip install requests psutil
-
-# Copy clients/python/crash_reporter.py to your project
-from crash_reporter import install_crash_handler
+# Install the crash reporter
+from clients.python.crash_reporter import install_crash_handler
 
 # One-time setup in your main.py
-reporter = install_crash_handler(
-    app_name="my-awesome-app",           # Your app name
-    app_version="v1.2.3",               # Your app version  
-    api_endpoint="https://your-worker-name.your-subdomain.workers.dev",
-    hmac_secret="your-hmac-secret",     # Same HMAC secret from Cloudflare
-    user_id="user-12345"                # Optional: anonymous user ID
-)
+reporter = install_crash_handler({
+    'app_name': "my-awesome-app",           # Your app name
+    'app_version': "v1.2.3",               # Your app version  
+    'api_endpoint': "https://your-worker-name.your-subdomain.workers.dev",
+    'hmac_secret': "your-hmac-secret",     # Same HMAC secret from Cloudflare
+    'user_id': "user-12345"                # Optional: anonymous user ID
+})
 
 # That's it! All crashes are now automatically reported
 # Database tables created automatically on first crash
 ```
 
-#### JavaScript/Node.js Apps
+#### Testing the Clients
 
-```javascript
-// Coming soon - JS client
-// Follow this repo for updates
+```bash
+# Test the JavaScript client
+pnpm run test-client
+
+# Test the Python client
+pnpm run test-client:python
+
+# Test with custom endpoint
+API_ENDPOINT="https://your-worker-url.workers.dev" HMAC_SECRET="your-secret" pnpm run test-client
 ```
 
 ## 📊 What Data Gets Collected
@@ -482,18 +530,64 @@ Submit a crash report.
 
 ## 🏗️ Development
 
-```bash
-# Install dependencies
-pnpm install
+### Project Structure
 
+```
+crash-analytics-api/
+├── worker/                 # Cloudflare Worker (main API)
+├── clients/               # Client libraries
+│   ├── javascript/       # Node.js/JavaScript client
+│   └── python/          # Python client
+├── scripts/              # Testing and utility scripts
+├── database/             # Database schema and queries
+├── docs/                 # Documentation
+├── .env.example          # Environment variables template
+├── wrangler.example.toml # Cloudflare configuration template
+└── package.json          # Node.js dependencies and scripts
+```
+
+### Environment Setup
+
+1. **Copy environment template:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Fill in your secrets in `.env`:**
+   ```bash
+   API_ENDPOINT=https://your-worker-name.your-subdomain.workers.dev
+   HMAC_SECRET=your-256-bit-hmac-secret
+   SUPABASE_URL=https://your-project-id.supabase.co
+   SUPABASE_SERVICE_KEY=your-service-role-key
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   # Node.js dependencies
+   pnpm install
+   
+   # Python client dependencies
+   pnpm run install:python-deps
+   ```
+
+### Development Commands
+
+```bash
 # Start local development
 pnpm run dev
 
 # Deploy to production
 pnpm run deploy
 
-# Install Python client dependencies
-pnpm run install:python-deps
+# Test the complete API
+pnpm run test
+
+# Test individual clients
+pnpm run test-client        # JavaScript client
+pnpm run test-client:python # Python client
+
+# Clear database (for testing)
+pnpm run clear-db
 ```
 
 ## 🤝 Contributing
