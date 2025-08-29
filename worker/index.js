@@ -142,7 +142,7 @@ async function checkRateLimit(ip, env) {
   const now = Math.floor(Date.now() / 1000);
   const windowStart = Math.floor(now / 60) * 60; // 1-minute windows
   
-  const key = `rate_limit:${await hashIP(ip)}:${windowStart}`;
+  const key = `rate_limit:${ip}:${windowStart}`; // Using IP directly for rate limiting
   
   // In production, use Cloudflare KV or Durable Objects
   // For now, using in-memory storage (resets on worker restart)
@@ -270,7 +270,7 @@ async function sanitizeCrashData(data, clientIP) {
     hardware_specs: data.hardware_specs || {},
     user_id: data.user_id ? sanitizeString(data.user_id) : null,
     session_id: data.session_id ? sanitizeString(data.session_id) : null,
-    ip_hash: await hashIP(clientIP)
+    // ip_hash: await hashIP(clientIP)  // Temporarily disabled
   };
 }
 
@@ -394,7 +394,7 @@ async function createTablesIfNotExist(env) {
         session_id TEXT,
         
         -- Security and rate limiting
-        ip_hash TEXT NOT NULL,
+        -- ip_hash column removed
         
         -- Metadata
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -412,7 +412,7 @@ async function createTablesIfNotExist(env) {
     CREATE INDEX IF NOT EXISTS idx_crash_reports_created_at ON crash_reports(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_crash_reports_app_version ON crash_reports(app_name, app_version);
     CREATE INDEX IF NOT EXISTS idx_crash_reports_platform ON crash_reports(platform);
-    CREATE INDEX IF NOT EXISTS idx_crash_reports_ip_hash ON crash_reports(ip_hash, created_at);
+    -- CREATE INDEX IF NOT EXISTS idx_crash_reports_ip_hash ON crash_reports(ip_hash, created_at);  -- Removed
 
     -- Row Level Security
     ALTER TABLE crash_reports ENABLE ROW LEVEL SECURITY;
@@ -439,8 +439,8 @@ async function createTablesIfNotExist(env) {
         (error_message IS NULL OR length(error_message) < 5000) AND
         (stack_trace IS NULL OR length(stack_trace) < 20000) AND
         
-        -- IP hash required
-        length(ip_hash) = 64
+        -- IP hash validation removed
+        -- length(ip_hash) = 64
     );
 
     -- Analytics view
@@ -452,7 +452,7 @@ async function createTablesIfNotExist(env) {
         platform,
         DATE_TRUNC('hour', created_at) as hour,
         COUNT(*) as crash_count,
-        COUNT(DISTINCT ip_hash) as unique_users
+        COUNT(*) as unique_users  -- Using total count instead of ip_hash distinct count
     FROM crash_reports 
     GROUP BY app_name, app_version, platform, DATE_TRUNC('hour', created_at)
     ORDER BY hour DESC;
