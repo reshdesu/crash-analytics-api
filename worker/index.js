@@ -259,7 +259,7 @@ function validateCrashData(data) {
 /**
  * Sanitize crash data for database insertion
  */
-function sanitizeCrashData(data, clientIP) {
+async function sanitizeCrashData(data, clientIP) {
   return {
     app_name: sanitizeString(data.app_name),
     app_version: sanitizeString(data.app_version),
@@ -270,7 +270,7 @@ function sanitizeCrashData(data, clientIP) {
     hardware_specs: data.hardware_specs || {},
     user_id: data.user_id ? sanitizeString(data.user_id) : null,
     session_id: data.session_id ? sanitizeString(data.session_id) : null,
-    ip_hash: hashIP(clientIP)
+    ip_hash: await hashIP(clientIP)
   };
 }
 
@@ -292,11 +292,25 @@ function sanitizeString(str) {
  * Hash IP address for privacy and rate limiting
  */
 async function hashIP(ip) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(ip + 'crash-analytics-salt'); // Add salt
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(ip + 'crash-analytics-salt'); // Add salt
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (error) {
+    console.error('Hash IP error:', error);
+    // Fallback to simple hash if crypto.subtle fails
+    let hash = 0;
+    const str = ip + 'crash-analytics-salt';
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const positiveHash = Math.abs(hash).toString(16);
+    return positiveHash.padEnd(64, '0').substring(0, 64);
+  }
 }
 
 /**

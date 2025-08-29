@@ -15,7 +15,7 @@ const http = require('http');
 // Make sure you have a .env file or set these environment variables:
 // - API_ENDPOINT: Your Cloudflare Workers API URL
 // - HMAC_SECRET: Your HMAC secret for request signing
-const API_ENDPOINT = process.env.API_ENDPOINT;
+const API_ENDPOINT = process.env.API_ENDPOINT || 'http://localhost:8787';
 const HMAC_SECRET = process.env.HMAC_SECRET;
 
 function generateHmacSignature(payload, secret) {
@@ -58,7 +58,7 @@ async function testCrashApi() {
     
     // Test crash data
     const testCrashData = {
-        app_name: 'test-app',
+        app_name: 'test-scripts-app',
         app_version: 'v1.0.0',
         platform: 'linux',
         crash_timestamp: new Date().toISOString(),
@@ -68,10 +68,18 @@ async function testCrashApi() {
     at main (/app/main.js:15:5)
     at Object.<anonymous> (/app/main.js:8:1)`,
         hardware_specs: {
-            cpu: { cores: 8, freq: 3200 },
-            memory: { total: 16000000000, available: 8000000000 },
+            cpu: { 
+                cores: require('os').cpus().length,
+                model: require('os').cpus()[0]?.model || 'Unknown',
+                arch: require('os').arch()
+            },
+            memory: { 
+                total: require('os').totalmem(),
+                free: require('os').freemem()
+            },
             platform: {
-                system: 'Linux',
+                system: require('os').platform(),
+                release: require('os').release(),
                 node_version: process.version
             }
         },
@@ -91,7 +99,7 @@ async function testCrashApi() {
         headers: {
             'Content-Type': 'application/json',
             'X-HMAC-Signature': `sha256=${signature}`,
-            'X-App-Name': 'test-app',
+            'X-App-Name': 'test-scripts-app',
             'Content-Length': Buffer.byteLength(payload)
         }
     };
