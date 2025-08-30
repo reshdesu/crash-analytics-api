@@ -63,7 +63,7 @@ async function createTables() {
         console.log('\n📋 IMPORTANT: Tables must be created manually in Supabase Dashboard');
         console.log('='.repeat(60));
         console.log('1. Go to: https://supabase.com/dashboard');
-        console.log('2. Select your project: rbnjtkaprgxaocedjrfu');
+        console.log('2. Select your project: your-project-id');
         console.log('3. Go to: SQL Editor');
         console.log('4. Run the SQL script below:');
         console.log('');
