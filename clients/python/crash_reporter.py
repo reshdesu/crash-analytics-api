@@ -13,7 +13,7 @@ import requests
 import time
 import uuid
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 # Load environment variables from .env file
@@ -104,7 +104,7 @@ class CrashReporter:
             'app_name': self.config['app_name'],
             'app_version': self.config['app_version'],
             'platform': self.config['platform'],
-            'crash_timestamp': datetime.utcnow().isoformat() + 'Z',
+            'crash_timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             'error_message': str(error),
             'stack_trace': stack_trace or str(error.__traceback__),
             'hardware_specs': self._get_hardware_specs(),
@@ -140,7 +140,7 @@ class CrashReporter:
     def store_crash_locally(self, error: Exception, stack_trace: Optional[str] = None) -> Dict[str, Any]:
         """Store crash report locally if API fails"""
         crash_data = {
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             'error': str(error),
             'stack': stack_trace or str(error.__traceback__),
             'app_name': self.config['app_name'],
