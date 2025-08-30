@@ -92,7 +92,7 @@ MAX_PAYLOAD_SIZE=50000
 
 ```bash
 # Fork this repository on GitHub first, then:
-git clone https://github.com/YOUR-USERNAME/crash-analytics-api.git
+git clone https://github.com/reshdesu/crash-analytics-api.git
 cd crash-analytics-api
 pnpm install
 ```
@@ -619,7 +619,7 @@ MIT License - see LICENSE file for details
 
 ## 🔗 Related Projects
 
-- [oopsie-daisy](https://github.com/your-username/oopsie-daisy) - Python application using this crash reporter
+- [oopsie-daisy](https://github.com/reshdesu/oopsie-daisy) - Python application using this crash reporter
 - Add your other projects here as you integrate them
 
 ---
