@@ -55,27 +55,27 @@ jobs:
           
           # Add standard sections
           echo "" >> changelog.md
-          echo "## ✨ Features" >> changelog.md
+          echo "## Features" >> changelog.md
           echo "" >> changelog.md
-          echo "### 🔒 Enterprise Security" >> changelog.md
-          echo "- **HMAC Authentication** - Cryptographically signed requests" >> changelog.md
-          echo "- **Rate Limiting** - IP-based protection (configurable)" >> changelog.md
-          echo "- **Data Validation** - 15+ validation rules prevent abuse" >> changelog.md
-          echo "- **Anonymous Reporting** - Zero personal data collected" >> changelog.md
+          echo "### Enterprise Security" >> changelog.md
+          echo "- HMAC Authentication - Cryptographically signed requests" >> changelog.md
+          echo "- Rate Limiting - IP-based protection (configurable)" >> changelog.md
+          echo "- Data Validation - 15+ validation rules prevent abuse" >> changelog.md
+          echo "- Anonymous Reporting - Zero personal data collected" >> changelog.md
           echo "" >> changelog.md
-          echo "### 🛠️ Core Functionality" >> changelog.md
-          echo "- **Universal API** - Works with Python, JavaScript, Go, and more" >> changelog.md
-          echo "- **Auto-Setup** - Database tables created automatically" >> changelog.md
-          echo "- **Multi-app Support** - Single API for all your applications" >> changelog.md
-          echo "- **Self-Healing** - Recreates missing tables if needed" >> changelog.md
+          echo "### Core Functionality" >> changelog.md
+          echo "- Universal API - Works with Python, JavaScript, Go, and more" >> changelog.md
+          echo "- Auto-Setup - Database tables created automatically" >> changelog.md
+          echo "- Multi-app Support - Single API for all your applications" >> changelog.md
+          echo "- Self-Healing - Recreates missing tables if needed" >> changelog.md
           echo "" >> changelog.md
-          echo "### 📊 Analytics & Insights" >> changelog.md
-          echo "- **100+ SQL Queries** - Ready-to-use analytics" >> changelog.md
-          echo "- **Hardware Analysis** - GPU, CPU, memory breakdowns" >> changelog.md
-          echo "- **Error Patterns** - Find common crash causes" >> changelog.md
-          echo "- **Dashboard Ready** - Works with Grafana, Metabase" >> changelog.md
+          echo "### Analytics & Insights" >> changelog.md
+          echo "- 100+ SQL Queries - Ready-to-use analytics" >> changelog.md
+          echo "- Hardware Analysis - GPU, CPU, memory breakdowns" >> changelog.md
+          echo "- Error Patterns - Find common crash causes" >> changelog.md
+          echo "- Dashboard Ready - Works with Grafana, Metabase" >> changelog.md
           echo "" >> changelog.md
-          echo "## 🚀 Quick Start" >> changelog.md
+          echo "## Quick Start" >> changelog.md
           echo "" >> changelog.md
           echo '```bash' >> changelog.md
           echo "# 1. Fork and clone this repository" >> changelog.md
@@ -94,30 +94,30 @@ jobs:
           echo 'API_ENDPOINT="your-endpoint" HMAC_SECRET="your-secret" pnpm test' >> changelog.md
           echo '```' >> changelog.md
           echo "" >> changelog.md
-          echo "## 📚 Documentation" >> changelog.md
+          echo "## Documentation" >> changelog.md
           echo "" >> changelog.md
-          echo "- **Setup Guide**: See [README.md](README.md) for complete setup instructions" >> changelog.md
-          echo "- **Analytics Queries**: Check [database/example-queries.sql](database/example-queries.sql) for 100+ example queries" >> changelog.md
-          echo "- **Python Client**: Use [clients/python/crash_reporter.py](clients/python/crash_reporter.py) in your Python apps" >> changelog.md
+          echo "- Setup Guide: See [README.md](README.md) for complete setup instructions" >> changelog.md
+          echo "- Analytics Queries: Check [database/example-queries.sql](database/example-queries.sql) for 100+ example queries" >> changelog.md
+          echo "- Python Client: Use [clients/python/crash_reporter.py](clients/python/crash_reporter.py) in your Python apps" >> changelog.md
           echo "" >> changelog.md
-          echo "## 🛡️ Security" >> changelog.md
+          echo "## Security" >> changelog.md
           echo "" >> changelog.md
-          echo "This release has been **security audited**:" >> changelog.md
-          echo "- ✅ No secrets in version control" >> changelog.md
-          echo "- ✅ HMAC request signing prevents abuse" >> changelog.md
-          echo "- ✅ Rate limiting protects against DoS" >> changelog.md
-          echo "- ✅ Input validation prevents injection attacks" >> changelog.md
-          echo "- ✅ Anonymous data collection only" >> changelog.md
+          echo "This release has been security audited:" >> changelog.md
+          echo "- No secrets in version control" >> changelog.md
+          echo "- HMAC request signing prevents abuse" >> changelog.md
+          echo "- Rate limiting protects against DoS" >> changelog.md
+          echo "- Input validation prevents injection attacks" >> changelog.md
+          echo "- Anonymous data collection only" >> changelog.md
           echo "" >> changelog.md
-          echo "## 📞 Support" >> changelog.md
+          echo "## Support" >> changelog.md
           echo "" >> changelog.md
-          echo "- **Issues**: [GitHub Issues](https://github.com/reshdesu/crash-analytics-api/issues)" >> changelog.md
-          echo "- **Discussions**: [GitHub Discussions](https://github.com/reshdesu/crash-analytics-api/discussions)" >> changelog.md
-          echo "- **Security**: Report security issues privately" >> changelog.md
+          echo "- Issues: [GitHub Issues](https://github.com/reshdesu/crash-analytics-api/issues)" >> changelog.md
+          echo "- Discussions: [GitHub Discussions](https://github.com/reshdesu/crash-analytics-api/discussions)" >> changelog.md
+          echo "- Security: Report security issues privately" >> changelog.md
           echo "" >> changelog.md
           echo "---" >> changelog.md
           echo "" >> changelog.md
-          echo "**Built with ❤️ for the developer community. Free, open source, and privacy-first.**" >> changelog.md
+          echo "Built for the developer community. Free, open source, and privacy-first." >> changelog.md
           
           # Output for GitHub Action
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
