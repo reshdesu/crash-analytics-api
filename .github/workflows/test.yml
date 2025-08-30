@@ -19,10 +19,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: 🔧 Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: 🧪 Validate project structure
         run: |
@@ -52,7 +56,7 @@ jobs:
           echo "🔍 Running security checks..."
           
           # Check for potential secrets in code (excluding test configurations)
-          if grep -r -E "(password|secret|key|token|credential)" --include="*.js" --include="*.py" --include="*.sql" --include="*.md" . | grep -v "test-api.js" | grep -v "README.md" | grep -v "example-queries.sql" | grep -v "your-secret" | grep -v "your-key" | grep -v "process.env" | grep -v "env\." | grep -v "HMAC" | grep -v "api_key" | grep -v "SERVICE_KEY" | head -5; then
+          if grep -r -E "(password|secret|key|token|credential)" --include="*.js" --include="*.py" --include="*.sql" --include="*.md" . | grep -v "scripts/test-api.js" | grep -v "README.md" | grep -v "example-queries.sql" | grep -v "your-secret" | grep -v "your-key" | grep -v "process.env" | grep -v "env\." | grep -v "HMAC" | grep -v "api_key" | grep -v "SERVICE_KEY" | head -5; then
             echo "⚠️  Potential secrets found in code - manual review needed"
             echo "ℹ️  This might be false positives (variable names, comments, etc.)"
           else
