@@ -128,7 +128,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag_info.outputs.tag }}
-          name: "🚀 Universal Crash Analytics API ${{ steps.tag_info.outputs.tag }}"
+          name: "${{ steps.tag_info.outputs.tag }}"
           body: ${{ steps.changelog.outputs.changelog }}
           prerelease: ${{ steps.tag_info.outputs.is_prerelease }}
           generate_release_notes: false  # We generate our own
