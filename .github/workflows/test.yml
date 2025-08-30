@@ -33,7 +33,7 @@ jobs:
             "worker/index.js"
             "database/schema.sql" 
             "clients/python/crash_reporter.py"
-            "test-api.js"
+            "scripts/test-api.js"
             "package.json"
             "README.md"
           )
@@ -145,7 +145,7 @@ jobs:
           echo "🔍 Validating test configuration..."
           
           # Check test script uses environment variables (not hardcoded secrets)
-          if grep -q "process.env.HMAC_SECRET" test-api.js; then
+          if grep -q "process.env.HMAC_SECRET" scripts/test-api.js; then
             echo "✅ Test script uses environment variables"
           else
             echo "❌ Test script should use environment variables"
@@ -153,7 +153,7 @@ jobs:
           fi
           
           # Check for placeholder values
-          if grep -q "your-worker-name.your-subdomain.workers.dev" test-api.js; then
+          if grep -q "your-worker-name.your-subdomain.workers.dev" scripts/test-api.js; then
             echo "✅ Test script has placeholder endpoint"
           else
             echo "⚠️  Test script endpoint should be configurable"
