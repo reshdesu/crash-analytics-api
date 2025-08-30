@@ -104,16 +104,14 @@ pnpm install
    - Settings → API → Project URL
    - Settings → API → Project API keys → service_role (secret)
 
-**✨ No manual database setup required!** Tables are created automatically on first crash report.
-
 ### Step 3: Setup Cloudflare Worker
 
 ```bash
-# Install Wrangler CLI globally
-npm install -g wrangler
+# Install Wrangler CLI (already included in project)
+pnpm add -D wrangler@4
 
 # Login to Cloudflare
-wrangler login
+npx wrangler login
 ```
 
 ### Step 4: Set Environment Variables
@@ -146,19 +144,32 @@ pnpm run deploy
 # https://your-worker-name.your-subdomain.workers.dev
 ```
 
-**🎉 That's it!** Your crash analytics API is ready to use.
+### Step 6: Setup Database
 
-### Step 6: Test Your Deployment
+**✨ Automated Setup (Recommended):**
+```bash
+# Run the automated setup script
+pnpm run setup-db
+```
+
+**Manual Setup (if automated fails):**
+1. Go to: [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Go to: SQL Editor
+4. Copy and paste the contents of `scripts/clean-setup.sql`
+5. Click "Run" to execute
+
+### Step 7: Test Your Deployment
 
 ```bash
 # Test your live API
-API_ENDPOINT="https://your-worker-url.workers.dev" HMAC_SECRET="your-secret" pnpm test
+pnpm test
 
 # Or start local development
 pnpm run dev  # Available at http://localhost:8787
 ```
 
-### Step 7: Integrate with Your Apps
+### Step 8: Integrate with Your Apps
 
 #### JavaScript/Node.js Apps
 
@@ -176,7 +187,6 @@ const reporter = installCrashHandler({
 });
 
 // That's it! All crashes are now automatically reported
-// Database tables created automatically on first crash
 ```
 
 #### Python Apps
@@ -187,28 +197,29 @@ from clients.python.crash_reporter import install_crash_handler
 
 # One-time setup in your main.py
 reporter = install_crash_handler({
-    'app_name': "my-awesome-app",           # Your app name
-    'app_version': "v1.2.3",               # Your app version  
+    'app_name': "my-awesome-app",           // Your app name
+    'app_version': "v1.2.3",               // Your app version  
     'api_endpoint': "https://your-worker-name.your-subdomain.workers.dev",
-    'hmac_secret': "your-hmac-secret",     # Same HMAC secret from Cloudflare
-    'user_id': "user-12345"                # Optional: anonymous user ID
+    'hmac_secret': "your-hmac-secret",     // Same HMAC secret from Cloudflare
+    'user_id': "user-12345"                // Optional: anonymous user ID
 })
 
 # That's it! All crashes are now automatically reported
-# Database tables created automatically on first crash
 ```
 
 #### Testing the Clients
 
 ```bash
 # Test the JavaScript client
-pnpm run test-client
+cd clients/javascript
+node test-simple.js
 
 # Test the Python client
-pnpm run test-client:python
+cd clients/python
+python crash_reporter.py
 
 # Test with custom endpoint
-API_ENDPOINT="https://your-worker-url.workers.dev" HMAC_SECRET="your-secret" pnpm run test-client
+API_ENDPOINT="https://your-worker-url.workers.dev" HMAC_SECRET="your-secret" pnpm test
 ```
 
 ## 📊 What Data Gets Collected
@@ -408,14 +419,27 @@ crash-analytics-api/
 ├── clients/
 │   ├── python/               # Python crash reporter
 │   │   ├── crash_reporter.py
-│   │   └── requirements.txt
-│   └── javascript/           # JS client (coming soon)
+│   │   ├── requirements.txt
+│   │   └── env.example       # Environment template
+│   └── javascript/           # JavaScript client
+│       ├── crash_reporter.js
+│       ├── test-simple.js    # Test script
+│       ├── package.json
+│       └── env.example       # Environment template
+├── scripts/
+│   ├── auto-setup.js         # Automated database setup
+│   ├── setup-db.sql          # Database schema
+│   ├── clean-setup.sql       # Clean database setup
+│   ├── nuke-db.sql           # Nuclear cleanup option
+│   ├── validate-env.js       # Environment validation
+│   ├── test-api.js           # End-to-end API testing
+│   └── ...                   # Other utility scripts
 ├── docs/
 │   └── wrangler-guide.md     # Complete Wrangler CLI guide
 ├── .github/workflows/        # Automated testing and releases
-├── wrangler.toml            # Cloudflare Worker config
-├── test-api.js              # End-to-end API testing
-└── README.md                # This file
+├── wrangler.example.toml     # Cloudflare Worker config template
+├── .env.example              # Environment variables template
+└── README.md                 # This file
 ```
 
 ## 🛠️ What is Wrangler?
@@ -444,10 +468,10 @@ pnpm test
 
 ## ✨ Key Features
 
-### 🔄 Auto-Setup
-- **Zero manual database setup** - Tables created automatically on first use
-- **Self-healing** - Recreates missing tables if needed
-- **Production ready** - Handles all edge cases
+### 🔄 Automated Setup
+- **Zero manual database setup** - Tables created automatically via setup scripts
+- **Multiple setup methods** - Automated script with manual SQL fallback
+- **Production ready** - Handles all edge cases and provides clear instructions
 
 ### 🔒 Enterprise Security
 - **HMAC authentication** - Prevents unauthorized crash reports
@@ -462,21 +486,25 @@ pnpm test
 - Anonymous user/session IDs (optional)
 - Crash timestamps and metadata
 
-## 📈 What Data is Collected
+## 🚀 Quick Start Commands
 
-**We collect (anonymously):**
-- ✅ Crash stack traces and error messages
-- ✅ OS version, CPU, GPU, RAM specifications
-- ✅ App version and crash timestamp
-- ✅ Platform information (Windows/Linux/macOS)
-- ✅ Anonymous session/user identifiers (optional)
+```bash
+# Install dependencies
+pnpm install
 
-**We do NOT collect:**
-- ❌ File paths or system paths
-- ❌ Usernames or personal information
-- ❌ Email addresses or contact info
-- ❌ File contents or sensitive data
-- ❌ Network information or IP addresses (stored hashed)
+# Setup database (automated)
+pnpm run setup-db
+
+# Deploy to Cloudflare
+pnpm run deploy
+
+# Test everything works
+pnpm test
+
+# Test individual clients
+cd clients/javascript && node test-simple.js
+cd clients/python && python crash_reporter.py
+```
 
 ## 🛡️ Privacy & Transparency
 
@@ -530,22 +558,6 @@ Submit a crash report.
 
 ## 🏗️ Development
 
-### Project Structure
-
-```
-crash-analytics-api/
-├── worker/                 # Cloudflare Worker (main API)
-├── clients/               # Client libraries
-│   ├── javascript/       # Node.js/JavaScript client
-│   └── python/          # Python client
-├── scripts/              # Testing and utility scripts
-├── database/             # Database schema and queries
-├── docs/                 # Documentation
-├── .env.example          # Environment variables template
-├── wrangler.example.toml # Cloudflare configuration template
-└── package.json          # Node.js dependencies and scripts
-```
-
 ### Environment Setup
 
 1. **Copy environment template:**
@@ -583,8 +595,11 @@ pnpm run deploy
 pnpm run test
 
 # Test individual clients
-pnpm run test-client        # JavaScript client
-pnpm run test-client:python # Python client
+cd clients/javascript && node test-simple.js
+cd clients/python && python crash_reporter.py
+
+# Setup database
+pnpm run setup-db
 
 # Clear database (for testing)
 pnpm run clear-db
