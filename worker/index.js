@@ -97,7 +97,7 @@ export default {
       }
 
       // Sanitize data
-      const sanitizedData = sanitizeCrashData(crashData, clientIP);
+      const sanitizedData = await sanitizeCrashData(crashData, clientIP);
 
       // Insert into Supabase
       const insertResult = await insertCrashReport(sanitizedData, env);
@@ -112,8 +112,12 @@ export default {
         });
       } else {
         console.error('Supabase insert failed:', insertResult.error);
+        
+        // Since tables exist, this is likely a data format issue
+        // Don't try to create tables again
         return new Response(JSON.stringify({
           error: 'Failed to save crash report',
+          details: insertResult.error,
           stored_locally: true // Client should fall back to local storage
         }), {
           status: 500,
@@ -278,7 +282,8 @@ async function sanitizeCrashData(data, clientIP) {
  * Sanitize string input
  */
 function sanitizeString(str) {
-  if (!str) return null;
+  if (str === null || str === undefined) return null;
+  if (str === '') return ''; // Don't convert empty string to null
   
   return str
     .toString()
@@ -318,6 +323,10 @@ async function hashIP(ip) {
  */
 async function insertCrashReport(crashData, env) {
   try {
+    if (!env.SUPABASE_URL) {
+      return { success: false, error: 'SUPABASE_URL environment variable is not set' };
+    }
+    
     const response = await fetch(`${env.SUPABASE_URL}/rest/v1/crash_reports`, {
       method: 'POST',
       headers: {
@@ -331,34 +340,8 @@ async function insertCrashReport(crashData, env) {
     
     if (response.ok) {
       return { success: true, id: 'inserted' };
-    } else if (response.status === 404 || response.status === 406) {
-      // Table doesn't exist, try to create it
-      console.log('Table not found, attempting to create...');
-      const createResult = await createTablesIfNotExist(env);
-      
-      if (createResult.success) {
-        // Retry the insert after creating tables
-        const retryResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/crash_reports`, {
-          method: 'POST',
-          headers: {
-            'apikey': env.SUPABASE_SERVICE_KEY,
-            'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(crashData)
-        });
-        
-        if (retryResponse.ok) {
-          return { success: true, id: 'inserted' };
-        } else {
-          const retryError = await retryResponse.text();
-          return { success: false, error: `Retry failed: HTTP ${retryResponse.status}: ${retryError}` };
-        }
-      } else {
-        return { success: false, error: `Table creation failed: ${createResult.error}` };
-      }
     } else {
+      // Since tables exist, this is likely a data format or validation issue
       const error = await response.text();
       return { success: false, error: `HTTP ${response.status}: ${error}` };
     }
@@ -369,134 +352,107 @@ async function insertCrashReport(crashData, env) {
 
 /**
  * Create tables and policies if they don't exist
+ * Uses multiple methods to handle different Supabase configurations
  */
 async function createTablesIfNotExist(env) {
-  const schema = `
-    -- Universal crash reporting table for all applications
-    CREATE TABLE IF NOT EXISTS crash_reports (
-        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        
-        -- App identification
-        app_name TEXT NOT NULL,
-        app_version TEXT NOT NULL,
-        
-        -- Crash details
-        crash_timestamp TIMESTAMPTZ NOT NULL,
-        platform TEXT NOT NULL,
-        error_message TEXT,
-        stack_trace TEXT,
-        
-        -- System information
-        hardware_specs JSONB,
-        
-        -- Optional tracking
-        user_id TEXT,
-        session_id TEXT,
-        
-        -- Security and rate limiting
-        -- ip_hash column removed
-        
-        -- Metadata
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        
-        -- Constraints
-        CONSTRAINT crash_reports_app_name_check CHECK (length(app_name) > 0 AND length(app_name) < 100),
-        CONSTRAINT crash_reports_app_version_check CHECK (app_version ~ '^v[0-9]+\\.[0-9]+\\.[0-9]+.*$'),
-        CONSTRAINT crash_reports_error_message_check CHECK (length(error_message) < 5000),
-        CONSTRAINT crash_reports_stack_trace_check CHECK (length(stack_trace) < 20000),
-        CONSTRAINT crash_reports_platform_check CHECK (platform IN ('windows', 'linux', 'macos', 'android', 'ios'))
-    );
-
-    -- Indexes for performance (only if they don't exist)
-    CREATE INDEX IF NOT EXISTS idx_crash_reports_app_name ON crash_reports(app_name);
-    CREATE INDEX IF NOT EXISTS idx_crash_reports_created_at ON crash_reports(created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_crash_reports_app_version ON crash_reports(app_name, app_version);
-    CREATE INDEX IF NOT EXISTS idx_crash_reports_platform ON crash_reports(platform);
-    -- CREATE INDEX IF NOT EXISTS idx_crash_reports_ip_hash ON crash_reports(ip_hash, created_at);  -- Removed
-
-    -- Row Level Security
-    ALTER TABLE crash_reports ENABLE ROW LEVEL SECURITY;
-
-    -- Create policy if it doesn't exist
-    DROP POLICY IF EXISTS "crash_reports_insert_only" ON crash_reports;
-    CREATE POLICY "crash_reports_insert_only" ON crash_reports
-    FOR INSERT 
-    WITH CHECK (
-        -- Timestamp must be recent (within last 24 hours)
-        crash_timestamp > (NOW() - INTERVAL '24 hours') AND
-        crash_timestamp <= NOW() AND
-        
-        -- App name must be non-empty
-        length(app_name) > 0 AND
-        
-        -- Version format validation
-        app_version ~ '^v[0-9]+\\.[0-9]+\\.[0-9]+' AND
-        
-        -- Platform validation
-        platform IN ('windows', 'linux', 'macos', 'android', 'ios') AND
-        
-        -- Size limits
-        (error_message IS NULL OR length(error_message) < 5000) AND
-        (stack_trace IS NULL OR length(stack_trace) < 20000) AND
-        
-        -- IP hash validation removed
-        -- length(ip_hash) = 64
-    );
-
-    -- Analytics view
-    DROP VIEW IF EXISTS crash_analytics;
-    CREATE VIEW crash_analytics AS
-    SELECT 
-        app_name,
-        app_version,
-        platform,
-        DATE_TRUNC('hour', created_at) as hour,
-        COUNT(*) as crash_count,
-        COUNT(*) as unique_users  -- Using total count instead of ip_hash distinct count
-    FROM crash_reports 
-    GROUP BY app_name, app_version, platform, DATE_TRUNC('hour', created_at)
-    ORDER BY hour DESC;
-  `;
-
-  try {
-    const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
-      method: 'POST',
-      headers: {
-        'apikey': env.SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sql: schema })
-    });
-
-    if (response.ok) {
-      console.log('Tables created successfully');
-      return { success: true };
-    } else {
-      // Try alternative method using SQL endpoint
-      const altResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/`, {
+  // Try multiple approaches to create tables
+  const methods = [
+    // Method 1: Try using the SQL endpoint with different content types
+    async () => {
+      const response = await fetch(`${env.SUPABASE_URL}/rest/v1/`, {
         method: 'POST',
         headers: {
           'apikey': env.SUPABASE_SERVICE_KEY,
           'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-          'Content-Type': 'application/sql',
+          'Content-Type': 'text/plain',
         },
-        body: schema
+        body: getMinimalSchema()
       });
-      
-      if (altResponse.ok) {
-        console.log('Tables created successfully (alternative method)');
-        return { success: true };
-      } else {
-        const error = await response.text();
-        console.error('Failed to create tables:', error);
-        return { success: false, error: `Failed to create tables: ${error}` };
-      }
+      return response.ok;
+    },
+    
+    // Method 2: Try using the SQL editor endpoint
+    async () => {
+      const response = await fetch(`${env.SUPABASE_URL}/rest/v1/sql`, {
+        method: 'POST',
+        headers: {
+          'apikey': env.SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: getMinimalSchema() })
+      });
+      return response.ok;
+    },
+    
+    // Method 3: Try using the RPC endpoint with exec_sql
+    async () => {
+      const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+        method: 'POST',
+        headers: {
+          'apikey': env.SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sql: getMinimalSchema() })
+      });
+      return response.ok;
     }
-  } catch (error) {
-    console.error('Error creating tables:', error);
-    return { success: false, error: error.message };
+  ];
+
+  // Try each method
+  for (let i = 0; i < methods.length; i++) {
+    try {
+      console.log(`Trying table creation method ${i + 1}...`);
+      const success = await methods[i]();
+      if (success) {
+        console.log(`Tables created successfully with method ${i + 1}`);
+        return { success: true };
+      }
+    } catch (error) {
+      console.log(`Method ${i + 1} failed:`, error.message);
+    }
   }
+
+  // If all methods fail, return error with instructions
+  return { 
+    success: false, 
+    error: 'All table creation methods failed. Please run the setup script manually.',
+    instructions: 'Run: node scripts/setup-db.sql in Supabase SQL Editor'
+  };
+}
+
+/**
+ * Get minimal schema for table creation
+ */
+function getMinimalSchema() {
+  return `
+    -- Create crash_reports table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS crash_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        app_name TEXT NOT NULL,
+        app_version TEXT NOT NULL,
+        crash_timestamp TIMESTAMPTZ NOT NULL,
+        platform TEXT NOT NULL,
+        error_message TEXT,
+        stack_trace TEXT,
+        hardware_specs JSONB,
+        user_id TEXT,
+        session_id TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    
+    -- Create basic index
+    CREATE INDEX IF NOT EXISTS idx_crash_reports_app_name ON crash_reports(app_name);
+    
+    -- Enable RLS
+    ALTER TABLE crash_reports ENABLE ROW LEVEL SECURITY;
+    
+    -- Create basic policy
+    DROP POLICY IF EXISTS "crash_reports_insert_only" ON crash_reports;
+    CREATE POLICY "crash_reports_insert_only" ON crash_reports
+    FOR INSERT WITH CHECK (length(app_name) > 0);
+  `;
 }
 
 /**

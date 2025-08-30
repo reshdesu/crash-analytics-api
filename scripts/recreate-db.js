@@ -132,28 +132,85 @@ async function recreateDatabase() {
     try {
         console.log('📝 Executing SQL...');
         
-        // Try using the SQL endpoint directly
-        const response = await makeRequest(`${SUPABASE_URL}/rest/v1/`, {
+        // Method 1: Try using the SQL endpoint with different content type
+        console.log('📝 Method 1: Using SQL endpoint...');
+        const response1 = await makeRequest(`${SUPABASE_URL}/rest/v1/`, {
             method: 'POST',
             headers: {
                 'apikey': SUPABASE_SERVICE_KEY,
                 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-                'Content-Type': 'application/sql',
+                'Content-Type': 'text/plain',
             },
             body: dropAndRecreateSQL
         });
         
-        if (response.statusCode === 200) {
-            console.log('✅ Database objects recreated successfully!');
+        if (response1.statusCode === 200) {
+            console.log('✅ Database objects recreated successfully via SQL endpoint!');
             console.log('📊 New table structure:');
             console.log('   - crash_reports table (no iphash column)');
             console.log('   - crash_analytics view');
             console.log('   - RLS policies');
             console.log('   - All indexes');
-        } else {
-            console.log(`❌ Failed to recreate database: HTTP ${response.statusCode}`);
-            console.log(`Response: ${response.body}`);
+            return;
         }
+        
+        // Method 2: Try using the SQL editor endpoint
+        console.log('📝 Method 2: Using SQL editor endpoint...');
+        const response2 = await makeRequest(`${SUPABASE_URL}/rest/v1/sql`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_SERVICE_KEY,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: dropAndRecreateSQL })
+        });
+        
+        if (response2.statusCode === 200) {
+            console.log('✅ Database objects recreated successfully via SQL editor!');
+            console.log('📊 New table structure:');
+            console.log('   - crash_reports table (no iphash column)');
+            console.log('   - crash_analytics view');
+            console.log('   - RLS policies');
+            console.log('   - All indexes');
+            return;
+        }
+        
+        // Method 3: Try using the RPC endpoint with exec_sql
+        console.log('📝 Method 3: Using RPC exec_sql endpoint...');
+        const response3 = await makeRequest(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_SERVICE_KEY,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sql: dropAndRecreateSQL })
+        });
+        
+        if (response3.statusCode === 200) {
+            console.log('✅ Database objects recreated successfully via RPC!');
+            console.log('📊 New table structure:');
+            console.log('   - crash_reports table (no iphash column)');
+            console.log('   - crash_analytics view');
+            console.log('   - RLS policies');
+            console.log('   - All indexes');
+            return;
+        }
+        
+        // If all methods fail, provide manual instructions
+        console.log(`❌ All SQL execution methods failed:`);
+        console.log(`   SQL endpoint: ${response1.statusCode}`);
+        console.log(`   SQL editor: ${response2.statusCode}`);
+        console.log(`   RPC endpoint: ${response3.statusCode}`);
+        console.log('\n📋 Manual Setup Required:');
+        console.log('1. Go to: https://supabase.com/dashboard');
+        console.log('2. Select your project: your-project-id');
+        console.log('3. Go to: SQL Editor');
+        console.log('4. Copy and paste the SQL script below:');
+        console.log('\n' + '='.repeat(60));
+        console.log(dropAndRecreateSQL);
+        console.log('='.repeat(60));
         
     } catch (error) {
         console.error('❌ Error:', error.message);

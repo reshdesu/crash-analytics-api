@@ -11,7 +11,9 @@
     "clear-db": "node scripts/clear-db.js",
     "test-client": "node clients/javascript/test-client.js",
     "test-client:python": "python3 clients/python/crash_reporter.py",
-    "install:python-deps": "uv pip install -r clients/python/requirements.txt"
+    "install:python-deps": "uv pip install -r clients/python/requirements.txt",
+    "validate-env": "node scripts/validate-env.js",
+    "setup-db": "node scripts/auto-setup.js"
   },
   "keywords": [
     "crash-reporting",
@@ -23,7 +25,7 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "^29.0.0",
-    "wrangler": "^3.0.0"
+    "wrangler": "^4.33.1"
   },
   "dependencies": {
     "dotenv": "^17.2.1"
