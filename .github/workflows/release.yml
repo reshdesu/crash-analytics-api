@@ -54,72 +54,70 @@ jobs:
           fi
           
           # Add standard sections
-          cat >> changelog.md << 'EOL'
-
-## ✨ Features
-
-### 🔒 Enterprise Security
-- **HMAC Authentication** - Cryptographically signed requests
-- **Rate Limiting** - IP-based protection (configurable)
-- **Data Validation** - 15+ validation rules prevent abuse
-- **Anonymous Reporting** - Zero personal data collected
-
-### 🛠️ Core Functionality  
-- **Universal API** - Works with Python, JavaScript, Go, and more
-- **Auto-Setup** - Database tables created automatically
-- **Multi-app Support** - Single API for all your applications
-- **Self-Healing** - Recreates missing tables if needed
-
-### 📊 Analytics & Insights
-- **100+ SQL Queries** - Ready-to-use analytics
-- **Hardware Analysis** - GPU, CPU, memory breakdowns  
-- **Error Patterns** - Find common crash causes
-- **Dashboard Ready** - Works with Grafana, Metabase
-
-## 🚀 Quick Start
-
-```bash
-# 1. Fork and clone this repository
-git clone https://github.com/YOUR-USERNAME/crash-analytics-api.git
-cd crash-analytics-api
-
-# 2. Install dependencies
-pnpm install
-
-# 3. Set up Supabase + Cloudflare (see README.md)
-
-# 4. Deploy
-pnpm run deploy
-
-# 5. Test your deployment
-API_ENDPOINT="your-endpoint" HMAC_SECRET="your-secret" pnpm test
-```
-
-## 📚 Documentation
-
-- **Setup Guide**: See [README.md](README.md) for complete setup instructions
-- **Analytics Queries**: Check [database/example-queries.sql](database/example-queries.sql) for 100+ example queries
-- **Python Client**: Use [clients/python/crash_reporter.py](clients/python/crash_reporter.py) in your Python apps
-
-## 🛡️ Security
-
-This release has been **security audited**:
-- ✅ No secrets in version control
-- ✅ HMAC request signing prevents abuse  
-- ✅ Rate limiting protects against DoS
-- ✅ Input validation prevents injection attacks
-- ✅ Anonymous data collection only
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/reshdesu/crash-analytics-api/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/reshdesu/crash-analytics-api/discussions)
-- **Security**: Report security issues privately
-
----
-
-**Built with ❤️ for the developer community. Free, open source, and privacy-first.**
-EOL
+          echo "" >> changelog.md
+          echo "## ✨ Features" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 🔒 Enterprise Security" >> changelog.md
+          echo "- **HMAC Authentication** - Cryptographically signed requests" >> changelog.md
+          echo "- **Rate Limiting** - IP-based protection (configurable)" >> changelog.md
+          echo "- **Data Validation** - 15+ validation rules prevent abuse" >> changelog.md
+          echo "- **Anonymous Reporting** - Zero personal data collected" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 🛠️ Core Functionality" >> changelog.md
+          echo "- **Universal API** - Works with Python, JavaScript, Go, and more" >> changelog.md
+          echo "- **Auto-Setup** - Database tables created automatically" >> changelog.md
+          echo "- **Multi-app Support** - Single API for all your applications" >> changelog.md
+          echo "- **Self-Healing** - Recreates missing tables if needed" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 📊 Analytics & Insights" >> changelog.md
+          echo "- **100+ SQL Queries** - Ready-to-use analytics" >> changelog.md
+          echo "- **Hardware Analysis** - GPU, CPU, memory breakdowns" >> changelog.md
+          echo "- **Error Patterns** - Find common crash causes" >> changelog.md
+          echo "- **Dashboard Ready** - Works with Grafana, Metabase" >> changelog.md
+          echo "" >> changelog.md
+          echo "## 🚀 Quick Start" >> changelog.md
+          echo "" >> changelog.md
+          echo '```bash' >> changelog.md
+          echo "# 1. Fork and clone this repository" >> changelog.md
+          echo "git clone https://github.com/YOUR-USERNAME/crash-analytics-api.git" >> changelog.md
+          echo "cd crash-analytics-api" >> changelog.md
+          echo "" >> changelog.md
+          echo "# 2. Install dependencies" >> changelog.md
+          echo "pnpm install" >> changelog.md
+          echo "" >> changelog.md
+          echo "# 3. Set up Supabase + Cloudflare (see README.md)" >> changelog.md
+          echo "" >> changelog.md
+          echo "# 4. Deploy" >> changelog.md
+          echo "pnpm run deploy" >> changelog.md
+          echo "" >> changelog.md
+          echo "# 5. Test your deployment" >> changelog.md
+          echo 'API_ENDPOINT="your-endpoint" HMAC_SECRET="your-secret" pnpm test' >> changelog.md
+          echo '```' >> changelog.md
+          echo "" >> changelog.md
+          echo "## 📚 Documentation" >> changelog.md
+          echo "" >> changelog.md
+          echo "- **Setup Guide**: See [README.md](README.md) for complete setup instructions" >> changelog.md
+          echo "- **Analytics Queries**: Check [database/example-queries.sql](database/example-queries.sql) for 100+ example queries" >> changelog.md
+          echo "- **Python Client**: Use [clients/python/crash_reporter.py](clients/python/crash_reporter.py) in your Python apps" >> changelog.md
+          echo "" >> changelog.md
+          echo "## 🛡️ Security" >> changelog.md
+          echo "" >> changelog.md
+          echo "This release has been **security audited**:" >> changelog.md
+          echo "- ✅ No secrets in version control" >> changelog.md
+          echo "- ✅ HMAC request signing prevents abuse" >> changelog.md
+          echo "- ✅ Rate limiting protects against DoS" >> changelog.md
+          echo "- ✅ Input validation prevents injection attacks" >> changelog.md
+          echo "- ✅ Anonymous data collection only" >> changelog.md
+          echo "" >> changelog.md
+          echo "## 📞 Support" >> changelog.md
+          echo "" >> changelog.md
+          echo "- **Issues**: [GitHub Issues](https://github.com/reshdesu/crash-analytics-api/issues)" >> changelog.md
+          echo "- **Discussions**: [GitHub Discussions](https://github.com/reshdesu/crash-analytics-api/discussions)" >> changelog.md
+          echo "- **Security**: Report security issues privately" >> changelog.md
+          echo "" >> changelog.md
+          echo "---" >> changelog.md
+          echo "" >> changelog.md
+          echo "**Built with ❤️ for the developer community. Free, open source, and privacy-first.**" >> changelog.md
           
           # Output for GitHub Action
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
