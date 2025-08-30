@@ -11,8 +11,8 @@ export default {
     // CORS headers
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-HMAC-Signature, X-App-Name',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-HMAC-Signature, X-App-Name, X-App-Version',
       'Access-Control-Max-Age': '86400',
     };
 
@@ -21,7 +21,12 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Only allow POST requests
+    // Handle GET requests for reading crash reports
+    if (request.method === 'GET') {
+      return await handleCrashReportRead(request, env, corsHeaders);
+    }
+
+    // Only allow POST requests for writing
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { 
         status: 405, 
@@ -453,6 +458,167 @@ function getMinimalSchema() {
     CREATE POLICY "crash_reports_insert_only" ON crash_reports
     FOR INSERT WITH CHECK (length(app_name) > 0);
   `;
+}
+
+/**
+ * Handle crash report reading (GET)
+ */
+async function handleCrashReportRead(request, env, corsHeaders) {
+  try {
+    // Get client IP for rate limiting
+    const clientIP = request.headers.get('CF-Connecting-IP') || 
+                    request.headers.get('X-Forwarded-For') || 
+                    'unknown';
+    
+    // Rate limiting check
+    const rateLimitResult = await checkRateLimit(clientIP, env);
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({
+        error: 'Rate limit exceeded',
+        retry_after: rateLimitResult.retry_after
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Verify HMAC signature for read requests
+    const signature = request.headers.get('X-HMAC-Signature');
+    if (!signature) {
+      return new Response(JSON.stringify({
+        error: 'Missing signature'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // For GET requests, we'll verify a simple signature
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(env.HMAC_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const data = encoder.encode('read');
+    const expectedSignatureBytes = await crypto.subtle.sign('HMAC', key, data);
+    const expectedSignature = Array.from(expectedSignatureBytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    if (signature !== `sha256=${expectedSignature}`) {
+      return new Response(JSON.stringify({
+        error: 'Invalid signature'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Get app name from headers
+    const appName = request.headers.get('X-App-Name');
+    const appVersion = request.headers.get('X-App-Version');
+    
+    if (!appName) {
+      return new Response(JSON.stringify({
+        error: 'Missing X-App-Name header'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Parse query parameters
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
+    const days = parseInt(url.searchParams.get('days') || '30');
+    const version = url.searchParams.get('version') || appVersion;
+
+    // Validate parameters
+    if (limit > 100 || limit < 1) {
+      return new Response(JSON.stringify({
+        error: 'Limit must be between 1 and 100'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (offset < 0) {
+      return new Response(JSON.stringify({
+        error: 'Offset must be non-negative'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (days > 365 || days < 1) {
+      return new Response(JSON.stringify({
+        error: 'Days must be between 1 and 365'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Execute query using Supabase REST API
+    const response = await fetch(`${env.SUPABASE_URL}/rest/v1/crash_reports`, {
+      method: 'GET',
+      headers: {
+        'apikey': env.SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        'Range': `${offset}-${offset + limit - 1}`,
+        'Prefer': 'count=exact'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Supabase query failed:', response.status, response.statusText);
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch crash reports'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const crashReports = await response.json();
+    const totalCount = response.headers.get('Content-Range')?.split('/')[1] || '0';
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: crashReports,
+      pagination: {
+        limit,
+        offset,
+        total: parseInt(totalCount),
+        has_more: offset + limit < parseInt(totalCount)
+      },
+      filters: {
+        app_name: appName,
+        app_version: version,
+        days
+      }
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('Read handler error:', error);
+    return new Response(JSON.stringify({
+      error: 'Internal server error'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 }
 
 /**

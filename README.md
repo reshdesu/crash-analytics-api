@@ -240,7 +240,107 @@ API_ENDPOINT="https://your-worker-url.workers.dev" HMAC_SECRET="your-secret" pnp
 
 ## 📈 Accessing Your Data
 
-### Quick Queries
+### 🚀 Crash Reader Clients
+
+**Programmatically access your crash data** using our official client libraries:
+
+#### JavaScript Crash Reader
+
+```javascript
+const CrashReader = require('./clients/javascript/crash_reader');
+
+const reader = new CrashReader({
+  appName: 'my-app',
+  appVersion: 'v1.0.0'
+});
+
+// Get recent crashes
+const recentCrashes = await reader.getRecentCrashes(24); // Last 24 hours
+console.log(`Found ${recentCrashes.length} recent crashes`);
+
+// Get crash statistics
+const stats = await reader.getCrashStats(30); // Last 30 days
+console.log(`Total crashes: ${stats.total_crashes}`);
+console.log(`Unique users affected: ${stats.unique_users}`);
+console.log(`Top errors: ${Object.keys(stats.top_errors)}`);
+
+// Search for specific errors
+const errorCrashes = await reader.getCrashesByError('TypeError', 7);
+console.log(`Found ${errorCrashes.length} TypeError crashes in last 7 days`);
+
+// Read with pagination and filtering
+const reports = await reader.readCrashReports({
+  limit: 50,
+  offset: 0,
+  days: 30,
+  version: 'v1.0.0'
+});
+```
+
+#### Python Crash Reader
+
+```python
+from clients.python.crash_reader import CrashReader
+
+reader = CrashReader({
+    'appName': 'my-app',
+    'appVersion': 'v1.0.0'
+})
+
+# Get recent crashes
+recent_crashes = reader.get_recent_crashes(24)  # Last 24 hours
+print(f"Found {len(recent_crashes)} recent crashes")
+
+# Get crash statistics
+stats = reader.get_crash_stats(30)  # Last 30 days
+print(f"Total crashes: {stats['total_crashes']}")
+print(f"Unique users affected: {stats['unique_users']}")
+print(f"Top errors: {list(stats['top_errors'].keys())}")
+
+# Search for specific errors
+error_crashes = reader.get_crashes_by_error('TypeError', 7)
+print(f"Found {len(error_crashes)} TypeError crashes in last 7 days")
+
+# Read with pagination and filtering
+reports = reader.read_crash_reports({
+    'limit': 50,
+    'offset': 0,
+    'days': 30,
+    'version': 'v1.0.0'
+})
+```
+
+#### Manual API Calls
+
+You can also make direct API calls to the read endpoint:
+
+```bash
+# Generate HMAC signature for 'read'
+HMAC_SECRET="your-hmac-secret"
+READ_SIGNATURE=$(echo -n "read" | openssl dgst -sha256 -hmac "$HMAC_SECRET" | cut -d' ' -f2)
+
+# Read crash reports
+curl -X GET "https://your-worker-url.workers.dev/?limit=10&days=7" \
+  -H "Content-Type: application/json" \
+  -H "X-HMAC-Signature: sha256=$READ_SIGNATURE" \
+  -H "X-App-Name: my-app" \
+  -H "X-App-Version: v1.0.0"
+```
+
+#### Testing the Readers
+
+```bash
+# Test JavaScript reader
+pnpm run test-reader
+
+# Test Python reader
+pnpm run test-reader:python
+
+# Test both write and read functionality
+pnpm test
+```
+
+### 📊 SQL Queries
 
 **Recent crashes by app:**
 ```sql
@@ -417,13 +517,17 @@ crash-analytics-api/
 │   ├── schema.sql            # Reference schema (auto-created by worker)
 │   └── example-queries.sql   # 100+ analytics queries
 ├── clients/
-│   ├── python/               # Python crash reporter
+│   ├── python/               # Python crash reporter & reader
 │   │   ├── crash_reporter.py
+│   │   ├── crash_reader.py   # Crash data reader
+│   │   ├── test_reader.py    # Reader test script
 │   │   ├── requirements.txt
 │   │   └── env.example       # Environment template
-│   └── javascript/           # JavaScript client
+│   └── javascript/           # JavaScript client & reader
 │       ├── crash_reporter.js
-│       ├── test-simple.js    # Test script
+│       ├── crash_reader.js    # Crash data reader
+│       ├── test-simple.js     # Reporter test script
+│       ├── test-reader.js     # Reader test script
 │       ├── package.json
 │       └── env.example       # Environment template
 ├── scripts/
@@ -501,9 +605,10 @@ pnpm run deploy
 # Test everything works
 pnpm test
 
-# Test individual clients
-cd clients/javascript && node test-simple.js
-cd clients/python && python crash_reporter.py
+# Test individual components
+pnpm run test-client        # Test crash reporting
+pnpm run test-reader        # Test crash reading (JavaScript)
+pnpm run test-reader:python # Test crash reading (Python)
 ```
 
 ## 🛡️ Privacy & Transparency
@@ -525,7 +630,7 @@ Access your crash data through:
 
 ## 🔄 API Endpoints
 
-### POST `/report`
+### POST `/` (Write Crash Reports)
 Submit a crash report.
 
 **Headers:**
@@ -553,6 +658,90 @@ Submit a crash report.
 {
   "success": true,
   "id": "crash-report-id"
+}
+```
+
+### GET `/` (Read Crash Reports)
+Retrieve crash reports for analysis.
+
+**Headers:**
+- `Content-Type: application/json`
+- `X-HMAC-Signature: sha256=<signature>` (signature of "read")
+- `X-App-Name: <app-name>`
+- `X-App-Version: <app-version>` (optional)
+
+**Query Parameters:**
+- `limit` (1-100, default: 50) - Number of reports to fetch
+- `offset` (default: 0) - Pagination offset
+- `days` (1-365, default: 30) - Days to look back
+- `version` (optional) - Filter by app version
+
+**HMAC Signature Generation:**
+For GET requests, the signature is generated from the string `"read"`:
+
+```javascript
+const crypto = require('crypto');
+const signature = crypto
+  .createHmac('sha256', HMAC_SECRET)
+  .update('read')
+  .digest('hex');
+```
+
+```python
+import hmac
+import hashlib
+
+signature = hmac.new(
+    HMAC_SECRET.encode('utf-8'),
+    'read'.encode('utf-8'),
+    hashlib.sha256
+).hexdigest()
+```
+
+**Example Request:**
+```bash
+# Generate signature
+HMAC_SECRET="your-hmac-secret"
+READ_SIGNATURE=$(echo -n "read" | openssl dgst -sha256 -hmac "$HMAC_SECRET" | cut -d' ' -f2)
+
+# Make request
+curl -X GET "https://your-worker-url.workers.dev/?limit=20&days=7&version=v1.0.0" \
+  -H "Content-Type: application/json" \
+  -H "X-HMAC-Signature: sha256=$READ_SIGNATURE" \
+  -H "X-App-Name: my-app" \
+  -H "X-App-Version: v1.0.0"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "app_name": "my-app",
+      "app_version": "v1.0.0",
+      "crash_timestamp": "2024-01-01T00:00:00Z",
+      "platform": "windows",
+      "error_message": "ValueError: Something went wrong",
+      "stack_trace": "Traceback...",
+      "hardware_specs": {...},
+      "user_id": "anonymous-user-123",
+      "session_id": "session-456",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "pagination": {
+    "limit": 20,
+    "offset": 0,
+    "total": 150,
+    "has_more": true
+  },
+  "filters": {
+    "app_name": "my-app",
+    "app_version": "v1.0.0",
+    "days": 7
+  }
 }
 ```
 

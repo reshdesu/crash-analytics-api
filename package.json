@@ -1,6 +1,6 @@
 {
   "name": "crash-analytics-api",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A crash analytics API built with Cloudflare Workers and Supabase",
   "main": "worker/index.js",
   "scripts": {
@@ -8,8 +8,11 @@
     "deploy": "wrangler deploy",
     "test": "node scripts/test-api.js",
     "test:security": "node scripts/test-api.js",
+
     "clear-db": "node scripts/clear-db.js",
     "test-client": "node clients/javascript/test-simple.js",
+    "test-reader": "node clients/javascript/test-reader.js",
+    "test-reader:python": "python3 clients/python/test_reader.py",
     "test-client:python": "python3 clients/python/crash_reporter.py",
     "install:python-deps": "uv pip install -r clients/python/requirements.txt",
     "validate-env": "node scripts/validate-env.js",
