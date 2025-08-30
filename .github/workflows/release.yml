@@ -79,7 +79,7 @@ jobs:
           echo "" >> changelog.md
           echo '```bash' >> changelog.md
           echo "# 1. Fork and clone this repository" >> changelog.md
-          echo "git clone https://github.com/YOUR-USERNAME/crash-analytics-api.git" >> changelog.md
+          echo "git clone https://github.com/${{ github.repository }}.git" >> changelog.md
           echo "cd crash-analytics-api" >> changelog.md
           echo "" >> changelog.md
           echo "# 2. Install dependencies" >> changelog.md
@@ -111,8 +111,8 @@ jobs:
           echo "" >> changelog.md
           echo "## Support" >> changelog.md
           echo "" >> changelog.md
-          echo "- Issues: [GitHub Issues](https://github.com/reshdesu/crash-analytics-api/issues)" >> changelog.md
-          echo "- Discussions: [GitHub Discussions](https://github.com/reshdesu/crash-analytics-api/discussions)" >> changelog.md
+          echo "- Issues: [GitHub Issues](https://github.com/${{ github.repository }}/issues)" >> changelog.md
+          echo "- Discussions: [GitHub Discussions](https://github.com/${{ github.repository }}/discussions)" >> changelog.md
           echo "- Security: Report security issues privately" >> changelog.md
           echo "" >> changelog.md
           echo "---" >> changelog.md
