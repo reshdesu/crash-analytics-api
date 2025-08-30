@@ -4,7 +4,7 @@
   "description": "JavaScript client for the Universal Crash Analytics API",
   "main": "crash_reporter.js",
   "scripts": {
-    "test": "node test-client.js"
+    "test": "node test-simple.js"
   },
   "keywords": ["crash-reporting", "error-tracking", "analytics"],
   "author": "",

@@ -9,7 +9,7 @@
     "test": "node scripts/test-api.js",
     "test:security": "node scripts/test-api.js",
     "clear-db": "node scripts/clear-db.js",
-    "test-client": "node clients/javascript/test-client.js",
+    "test-client": "node clients/javascript/test-simple.js",
     "test-client:python": "python3 clients/python/crash_reporter.py",
     "install:python-deps": "uv pip install -r clients/python/requirements.txt",
     "validate-env": "node scripts/validate-env.js",
