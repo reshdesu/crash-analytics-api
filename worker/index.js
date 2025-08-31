@@ -494,6 +494,20 @@ async function handleCrashReportRead(request, env, corsHeaders) {
     }
     
     // For GET requests, we'll verify a simple signature
+    // Extract the hex signature from the header
+    const signatureMatch = signature.match(/^sha256=([a-f0-9]+)$/);
+    if (!signatureMatch) {
+      return new Response(JSON.stringify({
+        error: 'Invalid signature format. Expected: sha256=<hex>'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const receivedSignature = signatureMatch[1];
+    
+    // Generate expected signature using Web Crypto API
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
@@ -505,11 +519,13 @@ async function handleCrashReportRead(request, env, corsHeaders) {
     
     const data = encoder.encode('read');
     const expectedSignatureBytes = await crypto.subtle.sign('HMAC', key, data);
-    const expectedSignature = Array.from(expectedSignatureBytes)
+    
+    // Convert ArrayBuffer to hex string
+    const expectedSignature = Array.from(new Uint8Array(expectedSignatureBytes))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    if (signature !== `sha256=${expectedSignature}`) {
+    if (receivedSignature !== expectedSignature) {
       return new Response(JSON.stringify({
         error: 'Invalid signature'
       }), {

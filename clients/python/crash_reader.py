@@ -7,7 +7,7 @@ import os
 import hmac
 import hashlib
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
 
@@ -111,7 +111,7 @@ class CrashReader:
         Returns:
             Dictionary containing crash statistics
         """
-        reports = self.read_crash_reports({'days': days, 'limit': 1000})
+        reports = self.read_crash_reports({'days': days, 'limit': 100})
         
         if not reports.get('success') or not reports.get('data'):
             raise Exception('Failed to fetch crash reports for statistics')
@@ -133,7 +133,7 @@ class CrashReader:
             }
         }
 
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         one_day_ago = now - timedelta(days=1)
         seven_days_ago = now - timedelta(days=7)
         thirty_days_ago = now - timedelta(days=30)
@@ -196,7 +196,7 @@ class CrashReader:
         Returns:
             List of matching crash reports
         """
-        reports = self.read_crash_reports({'days': days, 'limit': 1000})
+        reports = self.read_crash_reports({'days': days, 'limit': 100})
         
         if not reports.get('success'):
             raise Exception('Failed to fetch crashes')

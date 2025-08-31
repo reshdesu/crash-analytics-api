@@ -88,7 +88,7 @@ class CrashReader {
    * @returns {Promise<Object>} Crash statistics
    */
   async getCrashStats(days = 30) {
-    const reports = await this.readCrashReports({ days, limit: 1000 });
+    const reports = await this.readCrashReports({ days, limit: 100 });
     
     if (!reports.success || !reports.data) {
       throw new Error('Failed to fetch crash reports for statistics');
@@ -172,7 +172,7 @@ class CrashReader {
    * @returns {Promise<Array>} Matching crash reports
    */
   async getCrashesByError(errorMessage, days = 30) {
-    const reports = await this.readCrashReports({ days, limit: 1000 });
+    const reports = await this.readCrashReports({ days, limit: 100 });
     
     if (!reports.success) {
       throw new Error('Failed to fetch crashes');
